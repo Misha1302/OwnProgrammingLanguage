@@ -1,0 +1,5 @@
+string a = "Hello, "
+string b = call System.Console::ReadLine()
+string c = call System.String::Concat(a b)
+bool d = from c call System.String::Contains("Hello, World!")
+call System.Console::WriteLine(d)

@@ -1,0 +1,6 @@
+<exceptions>
+	<StringCharacterCannotBeString.Ru>Символ, с которого начинается строка, не может быть строкой. (settings.xml, stringCharacter)</StringCharacterCannotBeString.Ru>
+	<StringCharacterCannotBeString.En>The character that starts the string cannot be a string. (settings.xml, stringCharacter)</StringCharacterCannotBeString.En>
+	<CodeWithErrors.En>Code contains errors</CodeWithErrors.En>
+	<CodeWithErrors.Ru>Код содержит ошибки</CodeWithErrors.Ru>
+</exceptions>
