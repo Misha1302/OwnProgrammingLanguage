@@ -88,10 +88,16 @@ public partial class Lexer
                 continue;
             }
 
-            if (char.IsNumber(currentChar) || (currentChar == '-' && char.IsNumber(Code[Position + 1])))
-                return GetNextNumberToken();
+            var isNegativeNumber = currentChar == '(' && Code[Position + 1] == '-';
+            if (char.IsNumber(currentChar) || isNegativeNumber)
+                return GetNextNumberToken(isNegativeNumber);
 
-            if (_symbols.ContainsKey(currentChar)) return new Token(_symbols[currentChar], currentChar);
+            foreach (var symbol in _other)
+                if (Code[_position..].StartsWith(symbol.Key))
+                {
+                    Position += symbol.Key.Length - 1;
+                    return new Token(symbol.Value, symbol.Key);
+                }
 
             return GetCommand(out var token) ? token : new Token(Kind.Unknown, currentChar);
         }
@@ -134,18 +140,27 @@ public partial class Lexer
         return false;
     }
 
-    private Token GetNextNumberToken()
+    private Token GetNextNumberToken(bool isNegativeNumber)
     {
+        Token value;
+
+        if (isNegativeNumber) Position++;
         switch (Code[Position + 1])
         {
             case 'x':
                 Position += 2;
-                return GetNextHexToken();
+                value = GetNextHexToken();
+                if (isNegativeNumber) Position++;
+                return value;
             case 'b':
                 Position += 2;
-                return GetNextBinaryToken();
+                value = GetNextBinaryToken();
+                if (isNegativeNumber) Position++;
+                return value;
             default:
-                return GetNextDecimalToken();
+                value = GetNextDecimalToken();
+                if (isNegativeNumber) Position++;
+                return value;
         }
     }
 

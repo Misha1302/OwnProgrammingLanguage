@@ -12,7 +12,7 @@ public enum Kind
     DefaultType,
     Dot,
     Comma,
-    EqualsSign,
+    AssignmentSign,
     Variable,
     CreatedVariable,
     Call,
@@ -24,15 +24,27 @@ public enum Kind
     Multiplication,
     Subtraction,
     Addition,
-    
+
     Int,
     Float,
     Bool,
     String,
-    
+
     IntType,
     FloatType,
     VoidType,
     StringType,
-    BoolType
+    BoolType,
+    EqualsBoolSign,
+    Else,
+    If,
+    NotEqualsBoolSign,
+    GreatThanBoolSign,
+    LessThanLessBoolSign,
+    AndBoolSign,
+    OrBoolSign,
+    Using,
+    MethodSeparator,
+    EmptySign,
+    Method
 }

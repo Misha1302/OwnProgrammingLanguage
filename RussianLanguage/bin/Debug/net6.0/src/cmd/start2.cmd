@@ -1,1 +1,0 @@
-dotnet cil\Program.dll

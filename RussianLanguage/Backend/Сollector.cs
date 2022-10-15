@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using RussianLanguage.FrontEnd;
+using RussianLanguage.FrontEnd.Lexer;
 using static RussianLanguage.Backend.CollectorConstants;
 
 namespace RussianLanguage.Backend;
@@ -8,11 +9,9 @@ public static class Collector
 {
     private static readonly StringBuilder _code = new();
     private static readonly List<Token> _mainLocalVariables = new();
-    private static readonly List<Library> _libraries = new();
 
     public static string GetCode(List<Token> tokens)
     {
-        AddLibraries();
         SetLocalVariables(tokens);
 
         return CreateCode(tokens);
@@ -25,17 +24,9 @@ public static class Collector
             _mainLocalVariables.Add(t);
     }
 
-    private static void AddLibraries()
-    {
-        _libraries.Clear();
-        _libraries.Add(new Library("System.Runtime", "6:0:0:0"));
-        _libraries.Add(new Library("System.Console", "6:0:0:0"));
-    }
-
     private static string CreateCode(IReadOnlyList<Token> tokens)
     {
         _code.Clear();
-        ConnectLibraries();
 
         _code.Append(StartOfCilCode);
 
@@ -51,12 +42,6 @@ public static class Collector
 
         var q = _code.ToString();
         return q;
-    }
-
-    private static void ConnectLibraries()
-    {
-        foreach (var library in _libraries)
-            _code.Append($".assembly extern {library.FullName} {{ .ver {library.Version} }} \n");
     }
 
 #pragma warning disable CS8509 // The 'switch' expression does not handle all possible inputs (it is not exhaustive). For example, the pattern 'Kind.Eof' is not covered.
@@ -80,7 +65,7 @@ public static class Collector
     private static void AppendCodeFromMainMethod(IReadOnlyList<Token> tokens)
     {
         var variableName = string.Empty;
-        for (var i = 1; i < tokens.Count - 1; i++)
+        for (var i = 0; i < tokens.Count - 1; i++)
         {
             var token = tokens[i];
             if (token.IsPartOfExpression)
@@ -94,7 +79,7 @@ public static class Collector
                 var nextToken = tokens[i + 1];
                 switch (token.TokenKind)
                 {
-                    case Kind.EqualsSign:
+                    case Kind.AssignmentSign:
                         if (IsType(nextToken) || nextToken.IsPartOfExpression) i = AppendVariablesAssignment(tokens, i);
                         else variableName = tokens[i - 1].Text;
                         break;
@@ -113,8 +98,8 @@ public static class Collector
         {
             var token = tokens[i];
 
-            if (IsType(token)) _code.Append($"{GetPushCommand(token.Type)} {token.Text}\n");
-            else if (IsMathSign(token)) _code.Append(GetMathCommand(tokens[i]) + "\n");
+            if (IsType(token)) _code.Append($"{GetPushCommand(token)} {token.Text}\n");
+            else if (IsOperator(token)) _code.Append(GetMathCommand(tokens[i]) + "\n");
             else _code.Append($"ldloc.s {token.Text}\n");
 
             i++;
@@ -130,13 +115,28 @@ public static class Collector
             Kind.Addition => "add",
             Kind.Subtraction => "sub",
             Kind.Multiplication => "mul",
-            _ => "div"
+            Kind.Division => "div",
+            Kind.EqualsBoolSign => "ceq",
+            Kind.NotEqualsBoolSign => "ceq\r\nnot",
+            Kind.GreatThanBoolSign => "cgt",
+            Kind.LessThanLessBoolSign => "clt",
+            Kind.AndBoolSign => "and",
+            Kind.OrBoolSign => "or"
         };
     }
 
-    private static bool IsMathSign(Token token)
+    private static bool IsOperator(Token token)
     {
-        return token.TokenKind is Kind.Addition or Kind.Subtraction or Kind.Multiplication or Kind.Division;
+        return token.TokenKind is Kind.Addition or Kind.Subtraction or Kind.Multiplication or Kind.Division
+            or Kind.EqualsBoolSign or Kind.NotEqualsBoolSign or Kind.GreatThanBoolSign or Kind.LessThanLessBoolSign
+            or Kind.AndBoolSign or Kind.OrBoolSign;
+    }
+
+    private static bool IsBoolOperator(Token token)
+    {
+        return token.TokenKind is Kind.EqualsBoolSign or Kind.NotEqualsBoolSign or Kind.GreatThanBoolSign
+            or Kind.LessThanLessBoolSign
+            or Kind.AndBoolSign or Kind.OrBoolSign;
     }
 
     private static int AppendMethodCall(IReadOnlyList<Token> tokens, int i, string variableName = "")
@@ -149,9 +149,9 @@ public static class Collector
 
         if (i - 2 >= 0)
         {
-            if (tokens[i - 1].TokenKind == Kind.EqualsSign)
+            if (tokens[i - 1].TokenKind == Kind.AssignmentSign)
                 dataType = tokens[i - 2].Type;
-            if (i - 4 >= 0 && tokens[i - 3].TokenKind == Kind.EqualsSign)
+            if (i - 4 >= 0 && tokens[i - 3].TokenKind == Kind.AssignmentSign)
                 dataType = tokens[i - 4].Type;
 
             if (tokens[i - 2].TokenKind == Kind.From)
@@ -160,16 +160,16 @@ public static class Collector
 
         i = GetMethodTokens(tokens, i, method);
 
-        _ = GetMethodArgs(tokens, i, args);
+        i = GetMethodArgs(tokens, i, args);
 
-        if (fromVariable != null) _code.Append($"ldloc.s {fromVariable.Text}\n");
+        if (fromVariable != null) _code.Append($"ldloca.s {fromVariable.Text}\n");
 
         PushArguments(args);
 
         var stringDataType = dataType == DataType.@null ? "void" : dataType.ToString();
         _code.Append(fromVariable == null
             ? $"call {stringDataType} [mscorlib]"
-            : $"callvirt instance {stringDataType} [mscorlib]");
+            : $"call instance {stringDataType} [mscorlib]");
 
         foreach (var m in method) _code.Append(m.Text);
 
@@ -180,8 +180,31 @@ public static class Collector
         return i;
     }
 
-    private static void AppendTypesInMethod(string start, IReadOnlyList<Token> args, string end)
+    private static void AppendTypesInMethod(string start, List<Token> args, string end)
     {
+        foreach (var expressionPosition in LexerFixTokens.GetExpressionsPositions(args))
+        {
+            var type = DataType.@null;
+            var tempDebug = args.GetRange(expressionPosition.startPosition, expressionPosition.count);
+            foreach (var arg in tempDebug)
+                if (IsBoolOperator(arg) || arg.Type==DataType.@bool)
+                {
+                    type = DataType.@bool;
+                    break;
+                }
+                else if (arg.Type == DataType.@string)
+                {
+                    type = DataType.@string;
+                }
+                else
+                {
+                    type = DataType.int32;
+                }
+
+            args.RemoveRange(expressionPosition.startPosition, expressionPosition.count);
+            args.Insert(expressionPosition.startPosition, new Token(Kind.Unknown, "", type: type));
+        }
+
         _code.Append(start);
         for (var index = 0; index < args.Count; index++)
         {
@@ -197,8 +220,17 @@ public static class Collector
         foreach (var arg in args)
         {
             var variable = _mainLocalVariables.FirstOrDefault(x => x.Text == arg.Text);
-            _code.Append(variable != null ? $"ldloc.s {variable.Text}\n" : $"{GetPushCommand(arg.Type)} {arg.Text}\n");
+            var pushString = PushCommand(variable, arg);
+
+            _code.Append(pushString);
         }
+    }
+
+    private static string PushCommand(Token? variable, Token arg)
+    {
+        if (variable != null) return $"ldloc.s {variable.Text}\n";
+        
+        return IsOperator(arg) ? $"{GetMathCommand(arg)}\n" : $"{GetPushCommand(arg)} {arg.Text}\n";
     }
 
     private static int GetMethodArgs(IReadOnlyList<Token> tokens, int i, ICollection<Token> args)
@@ -243,9 +275,8 @@ public static class Collector
 
 
         var var = _mainLocalVariables.First(x => x.Text == varName);
-        var varType = var.Type;
 
-        var command = GetPushCommand(varType);
+        var command = GetPushCommand(var);
 
         if (value != null) _code.Append($"{command} {value.Text.Replace('\'', '"')}\n");
 
@@ -254,9 +285,9 @@ public static class Collector
         return i;
     }
 
-    private static string GetPushCommand(DataType varType)
+    private static string GetPushCommand(Token varType)
     {
-        var command = varType switch
+        var command = varType.Type switch
         {
             DataType.int32 => PUSH_INT_CONSTANT,
             DataType.@bool => PUSH_INT_CONSTANT,

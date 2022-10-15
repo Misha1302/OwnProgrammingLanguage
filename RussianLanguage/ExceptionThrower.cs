@@ -38,9 +38,3 @@ public enum ExceptionType
     UnknownLanguage,
     CodeWithErrors
 }
-
-public enum Language
-{
-    Ru,
-    En
-}

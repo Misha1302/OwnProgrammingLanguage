@@ -1,0 +1,9 @@
+using "System.Convert"
+using "System"
+
+string aStr = call Console::ReadLine()
+int a = call ::ToInt32(aStr)
+bool aLessOrEqualsZero = [(a < 0) or (a == 0)]
+string b = from aLessOrEqualsZero call Boolean::ToString()
+string strOne = call String::Concat("a <= 0: " b)
+call Console::WriteLine(strOne)

@@ -1,2 +1,2 @@
-C:\Users\razak\.nuget\packages\microsoft.netcore.ilasm\6.0.0\runtimes\native\ilasm cil\Program.il /dll
+C:\Users\razak\.nuget\packages\microsoft.netcore.ilasm\6.0.0\runtimes\native\ilasm cil\Program.il /exe
 pause

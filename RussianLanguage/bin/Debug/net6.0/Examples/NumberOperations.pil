@@ -4,14 +4,14 @@ string bStr = call System.Console::ReadLine()
 float a = call System.Convert::ToSingle(aStr)
 float b = call System.Convert::ToSingle(bStr)  
 
-a = [a 3 / 2 +]
-b = [b 4 / 3 -]
+a = [(a / 3 + 2) * (-2)]
+b = [b / 4 - 3 * (-2)]
 
 string tmpA = call System.Convert::ToString(a)
 string tmpB = call System.Convert::ToString(b)
 
-aStr = call System.String::Concat("a / 3 + 2 = " tmpA)
-bStr = call System.String::Concat("b / 4 - 3 = " tmpB)
+aStr = call System.String::Concat("(a / 3 + 2) * (-2) = " tmpA)
+bStr = call System.String::Concat("b / 4 - 3 * (-2) = " tmpB)
 
 call System.Console::WriteLine(aStr)
 call System.Console::WriteLine(bStr)

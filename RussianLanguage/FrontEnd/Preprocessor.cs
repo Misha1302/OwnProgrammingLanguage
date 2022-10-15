@@ -7,7 +7,7 @@ namespace RussianLanguage.FrontEnd;
 public class Preprocessor
 {
     private const int LINE_INDEX_OFFSET = 1;
-    private const string WHITE_SPACES_WITHOUT_NEW_LINE = "[ \t\v\f\r]+";
+    private const string WHITE_SPACES_WITHOUT_NEW_LINE = "[ \t\v\f\r]";
     public const char STRING_CHARACTER_INTERNAL = '\"';
 
     private readonly char _stringCharacter;
@@ -52,8 +52,11 @@ public class Preprocessor
 
         for (var i = 0; i < split.Length; i += 2)
         {
-            split[i] = Regex.Replace(split[i], WHITE_SPACES_WITHOUT_NEW_LINE, " ");
-            split[i] = Regex.Replace(split[i], $"(?<=(-)){WHITE_SPACES_WITHOUT_NEW_LINE}(?=[0-9])", "");
+            split[i] = Regex.Replace(split[i], $"{WHITE_SPACES_WITHOUT_NEW_LINE}+", " ");
+            split[i] = Regex.Replace(split[i], $"(?<=(-)){WHITE_SPACES_WITHOUT_NEW_LINE}+(?=[0-9])", "");
+            split[i] = Regex.Replace(split[i], $"\\s+(?=([\\-\\+\\/\\*]))", "");
+            split[i] = Regex.Replace(split[i], $"(?<=([\\-\\+\\/\\*]))\\s+", "");
+            // split[i] = Regex.Replace(split[i], $"(?<!([\\-\\+\\/\\*]))-(?=(\\s*\\d))", "+-");
         }
 
         var result = new StringBuilder(string.Join(STRING_CHARACTER_INTERNAL, split));

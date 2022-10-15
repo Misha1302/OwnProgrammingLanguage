@@ -1,1 +1,1 @@
-start src\cmd\start2.cmd
+start cil\Program.exe

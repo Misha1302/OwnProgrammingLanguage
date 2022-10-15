@@ -26,26 +26,37 @@ public partial class Lexer
         { "int", Kind.IntType },
         { "float", Kind.FloatType },
         { "void", Kind.VoidType },
-        { "call", Kind.Call }
+        { "call", Kind.Call },
+        { "using", Kind.Using },
+        // { "if", Kind.If },
+        // { "else", Kind.Else }
     };
 
-    private static readonly IReadOnlyDictionary<char, Kind> _symbols = new Dictionary<char, Kind>
+    private static readonly IReadOnlyDictionary<string, Kind> _other = new Dictionary<string, Kind>
     {
-        { '(', Kind.OpenParenthesis },
-        { ')', Kind.CloseParenthesis },
-        
-        { '[', Kind.OpenBracket },
-        { ']', Kind.CloseBracket },
-        
-        { ',', Kind.Comma },
-        { '.', Kind.Dot },
-        
-        { '=', Kind.EqualsSign },
-        
-        { '+', Kind.Addition },
-        { '-', Kind.Subtraction },
-        { '*', Kind.Multiplication },
-        { '/', Kind.Division },
+        { "(", Kind.OpenParenthesis },
+        { ")", Kind.CloseParenthesis },
+
+        { "[", Kind.OpenBracket },
+        { "]", Kind.CloseBracket },
+
+        { ",", Kind.Comma },
+        { ".", Kind.Dot },
+        { "::", Kind.MethodSeparator },
+
+        { "==", Kind.EqualsBoolSign },
+        { "!=", Kind.NotEqualsBoolSign },
+        { ">", Kind.GreatThanBoolSign },
+        { "<", Kind.LessThanLessBoolSign },
+        { "and", Kind.AndBoolSign },
+        { "or", Kind.OrBoolSign },
+
+        { "=", Kind.AssignmentSign },
+
+        { "+", Kind.Addition },
+        { "-", Kind.Subtraction },
+        { "*", Kind.Multiplication },
+        { "/", Kind.Division }
     };
 
     private readonly List<CodeLine> _codeLines;
