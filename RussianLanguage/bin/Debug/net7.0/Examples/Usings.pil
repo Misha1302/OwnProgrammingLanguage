@@ -1,0 +1,9 @@
+using "System.Convert"
+using "System"
+
+string aStr = call Console::ReadLine()
+int a = call ::ToInt32(aStr)
+
+a = [a + 2]
+
+call Console::WriteLine(a)

@@ -1,6 +1,6 @@
 ﻿using System.Text;
-using RussianLanguage.FrontEnd;
-using RussianLanguage.FrontEnd.Lexer;
+using Lexer.FrontEnd;
+using Lexer.Lexer;
 using static RussianLanguage.Backend.CollectorConstants;
 
 namespace RussianLanguage.Backend;
@@ -28,6 +28,8 @@ public static class Collector
     {
         _code.Clear();
 
+        AddAssemblies(tokens);
+
         _code.Append(StartOfCilCode);
 
         InitLocalVariables();
@@ -42,6 +44,13 @@ public static class Collector
 
         var q = _code.ToString();
         return q;
+    }
+
+    private static void AddAssemblies(IEnumerable<Token> tokens)
+    {
+        foreach (var t in tokens)
+            if (t.TokenKind == Kind.Extern)
+                _code.Append($"{t.Text}\n");
     }
 
 #pragma warning disable CS8509 // The 'switch' expression does not handle all possible inputs (it is not exhaustive). For example, the pattern 'Kind.Eof' is not covered.
@@ -112,10 +121,10 @@ public static class Collector
     {
         return token.TokenKind switch
         {
-            Kind.Addition => "add",
-            Kind.Subtraction => "sub",
-            Kind.Multiplication => "mul",
-            Kind.Division => "div",
+            Kind.Addition => "add.ovf",
+            Kind.Subtraction => "sub.ovf",
+            Kind.Multiplication => "mul.ovf",
+            Kind.Division => "div.ovf",
             Kind.EqualsBoolSign => "ceq",
             Kind.NotEqualsBoolSign => "ceq\r\nnot",
             Kind.GreatThanBoolSign => "cgt",
@@ -135,8 +144,7 @@ public static class Collector
     private static bool IsBoolOperator(Token token)
     {
         return token.TokenKind is Kind.EqualsBoolSign or Kind.NotEqualsBoolSign or Kind.GreatThanBoolSign
-            or Kind.LessThanLessBoolSign
-            or Kind.AndBoolSign or Kind.OrBoolSign;
+            or Kind.LessThanLessBoolSign or Kind.AndBoolSign or Kind.OrBoolSign;
     }
 
     private static int AppendMethodCall(IReadOnlyList<Token> tokens, int i, string variableName = "")
@@ -151,9 +159,9 @@ public static class Collector
         {
             if (tokens[i - 1].TokenKind == Kind.AssignmentSign)
                 dataType = tokens[i - 2].Type;
+
             if (i - 4 >= 0 && tokens[i - 3].TokenKind == Kind.AssignmentSign)
                 dataType = tokens[i - 4].Type;
-
             if (tokens[i - 2].TokenKind == Kind.From)
                 fromVariable = tokens[i - 1];
         }
@@ -168,8 +176,8 @@ public static class Collector
 
         var stringDataType = dataType == DataType.@null ? "void" : dataType.ToString();
         _code.Append(fromVariable == null
-            ? $"call {stringDataType} [mscorlib]"
-            : $"call instance {stringDataType} [mscorlib]");
+            ? $"call {stringDataType}"
+            : $"call instance {stringDataType}");
 
         foreach (var m in method) _code.Append(m.Text);
 
@@ -187,7 +195,7 @@ public static class Collector
             var type = DataType.@null;
             var tempDebug = args.GetRange(expressionPosition.startPosition, expressionPosition.count);
             foreach (var arg in tempDebug)
-                if (IsBoolOperator(arg) || arg.Type==DataType.@bool)
+                if (IsBoolOperator(arg) || arg.Type == DataType.@bool)
                 {
                     type = DataType.@bool;
                     break;
@@ -215,21 +223,18 @@ public static class Collector
         _code.Append(end);
     }
 
-    private static void PushArguments(List<Token> args)
+    private static void PushArguments(IEnumerable<Token> args)
     {
-        foreach (var arg in args)
-        {
-            var variable = _mainLocalVariables.FirstOrDefault(x => x.Text == arg.Text);
-            var pushString = PushCommand(variable, arg);
-
+        foreach (var pushString in from arg in args
+                 let variable = _mainLocalVariables.FirstOrDefault(x => x.Text == arg.Text)
+                 select PushCommand(variable, arg))
             _code.Append(pushString);
-        }
     }
 
     private static string PushCommand(Token? variable, Token arg)
     {
         if (variable != null) return $"ldloc.s {variable.Text}\n";
-        
+
         return IsOperator(arg) ? $"{GetMathCommand(arg)}\n" : $"{GetPushCommand(arg)} {arg.Text}\n";
     }
 
@@ -296,5 +301,6 @@ public static class Collector
         };
         return command;
     }
+
 #pragma warning restore CS8509
 }

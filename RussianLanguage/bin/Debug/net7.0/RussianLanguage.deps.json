@@ -1,0 +1,45 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v7.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v7.0": {
+      "RussianLanguage/1.0.0": {
+        "dependencies": {
+          "Lexer": "1.0.0",
+          "Microsoft.NETCore.ILDAsm": "7.0.0-rc.2.22472.3"
+        },
+        "runtime": {
+          "RussianLanguage.dll": {}
+        }
+      },
+      "Microsoft.NETCore.ILDAsm/7.0.0-rc.2.22472.3": {},
+      "Lexer/1.0.0": {
+        "runtime": {
+          "Lexer.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "RussianLanguage/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.NETCore.ILDAsm/7.0.0-rc.2.22472.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TsM9RztVigClg6dBJlws2XZhNBzUR6SPULaWvK0NJXCqiC0n24oxCmVSvVXH321aw6S8iQ49eiCeebKka+ntlA==",
+      "path": "microsoft.netcore.ildasm/7.0.0-rc.2.22472.3",
+      "hashPath": "microsoft.netcore.ildasm.7.0.0-rc.2.22472.3.nupkg.sha512"
+    },
+    "Lexer/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

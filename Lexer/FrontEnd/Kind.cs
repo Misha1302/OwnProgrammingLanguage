@@ -1,0 +1,47 @@
+namespace Lexer.FrontEnd;
+
+public enum Kind
+{
+    Eof,
+    Whitespace,
+    Unknown,
+    NewLine,
+    OpenParenthesis,
+    CloseParenthesis,
+    DefaultType,
+    Dot,
+    Comma,
+    AssignmentSign,
+    Variable,
+    CreatedVariable,
+    Call,
+    Void,
+    From,
+    OpenBracket,
+    CloseBracket,
+    Division,
+    Multiplication,
+    Subtraction,
+    Addition,
+
+    Int,
+    Float,
+    Bool,
+    String,
+
+    IntType,
+    FloatType,
+    VoidType,
+    StringType,
+    BoolType,
+    EqualsBoolSign,
+    NotEqualsBoolSign,
+    GreatThanBoolSign,
+    LessThanLessBoolSign,
+    AndBoolSign,
+    OrBoolSign,
+    Using,
+    MethodSeparator,
+    Method,
+    Extern
+}

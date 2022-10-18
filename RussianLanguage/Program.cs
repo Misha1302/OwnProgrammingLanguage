@@ -1,32 +1,29 @@
 ﻿using System.Diagnostics;
+using Lexer.FrontEnd;
 using RussianLanguage.Backend;
-using RussianLanguage.FrontEnd;
-using RussianLanguage.FrontEnd.Lexer;
 
 namespace RussianLanguage;
 
 public static class Program
 {
-    private static readonly string _code;
+    private static string _code = null!;
 
-    static Program()
+    private static void Main(string[] args)
     {
-        _code = File.ReadAllText("code.sil");
+        MainInternal(args);
     }
 
-    private static void Main()
-    {
-        MainInternal();
-    }
 
-    private static void MainInternal()
+    private static void MainInternal(IReadOnlyList<string> strings)
     {
+        _code = File.ReadAllText(strings.Count > 0 ? strings[0] : "code.sil");
+
         var stopwatch = Stopwatch.StartNew();
 
 
         SetVariables(out var stringCharacter, out var language);
 
-        var tokens = GetTokens(stringCharacter);
+        var tokens = GetTokens(stringCharacter, _code);
         var ilCode = Collector.GetCode(tokens);
         var codeCompilationStatus = IlController.CompileCodeToIl(ilCode);
 
@@ -60,9 +57,9 @@ public static class Program
         stringCharacter = GetStringCharacter(stringCharacterParameter, language);
     }
 
-    private static List<Token> GetTokens(char stringCharacter)
+    private static List<Token> GetTokens(char stringCharacter, in string code)
     {
-        var lexer = new Lexer(_code, stringCharacter);
+        var lexer = new Lexer.Lexer.Lexer(code, stringCharacter);
         var tokens = lexer.GetTokens();
         return tokens;
     }
