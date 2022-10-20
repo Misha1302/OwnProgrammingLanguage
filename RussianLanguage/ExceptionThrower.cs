@@ -2,7 +2,7 @@
 
 public static class ExceptionThrower
 {
-    private const int MILLISECONDS_TIMEOUT = 5 * 1000;
+    private const int MILLISECONDS_TIMEOUT = 10 * 1000;
     private static readonly Dictionary<string, string> _exceptions;
 
     static ExceptionThrower()

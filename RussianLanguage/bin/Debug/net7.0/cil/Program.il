@@ -14,7 +14,7 @@
 
 .class public abstract auto ansi sealed beforefieldinit Program extends [mscorlib]System.Object
 {
-  .method private hidebysig static void Main(string[] args) cil managed
+  .method public hidebysig static void Main(string[] args) cil managed
   {
     .entrypoint
     .locals ([0] string aStr, [1] float32 q, [2] float32 abs, [3] float32 cos, [4] float32 sin, [5] string a, [6] string b, [7] string c, [8] string absStr, [9] string cosStr, [10] string sinStr)
