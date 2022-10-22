@@ -1,4 +1,5 @@
-﻿using Lexer.FrontEnd;
+﻿using System.ComponentModel;
+using Lexer.FrontEnd;
 
 namespace Lexer.Lexer;
 
@@ -7,6 +8,24 @@ internal static class LexerVariables
     #region Properties
 
     internal static string Code => LinePosition < CodeLines.Count ? CodeLines[LinePosition].Line : "\0";
+
+    [DefaultValue(-1)]
+    internal static int Position
+    {
+        get => _position;
+        set
+        {
+            if (Code.Length <= value)
+            {
+                _position = -1;
+                LinePosition++;
+            }
+            else
+            {
+                _position = value;
+            }
+        }
+    }
 
     #endregion
 
@@ -18,7 +37,7 @@ internal static class LexerVariables
 
     #endregion
 
-    #region Readonly fields
+    #region Readonly
 
     internal static readonly IReadOnlyDictionary<string, Kind> Words = new Dictionary<string, Kind>
     {
@@ -63,37 +82,20 @@ internal static class LexerVariables
 
     internal static List<CodeLine> CodeLines = null!;
 
-    internal static readonly Token DefaultToken = new(Kind.DefaultType, null!);
+    internal static readonly Token DefaultToken = new(Kind.DefaultType, string.Empty);
     internal static readonly Token EofToken = new(Kind.Eof, EOF_CHAR);
     internal static readonly Token NewLineToken = new(Kind.NewLine, NEW_LINE_CHAR);
-    internal static readonly Token WhiteSpaceToken = new(Kind.Whitespace, ' ');
+    internal static readonly Token WhiteSpaceToken = new(Kind.Whitespace, " ");
 
-    internal static Preprocessor Preprocessor = null!;
     internal static char StringCharacter;
 
     #endregion
 
-    #region Other fields
+    #region Other
 
     internal static int LinePosition;
-    internal static int _position = -1;
 
-    internal static int Position
-    {
-        get => _position;
-        set
-        {
-            if (Code.Length <= value)
-            {
-                _position = -1;
-                LinePosition++;
-            }
-            else
-            {
-                _position = value;
-            }
-        }
-    }
+    private static int _position = -1;
 
     #endregion
 }

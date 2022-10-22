@@ -20,8 +20,6 @@ public static class IlController
         proc.StartInfo = processStartInfo;
         proc.Start();
 
-        Thread.Sleep(100);
-
         var stringBuilder = new StringBuilder(512);
         while (!stringBuilder.ToString().Contains("pause"))
             stringBuilder.Append(proc.StandardOutput.ReadLine() + '\n');

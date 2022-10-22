@@ -1,22 +1,8 @@
-using "System.Convert"
 using "System"
 
-string aStr = call Console::ReadLine()
-float q = call ::ToSingle(aStr)
+string numberStr = call Console::ReadLine()
 
-float abs = call MathF::Abs(q)
-float cos = call MathF::Cos(q)
-float sin = call MathF::Sin(q)
+numberStr = [numberStr + ", World!"]
 
-string a = from abs call ::ToString()
-string b = from cos call ::ToString()
-string c = from sin call ::ToString()
-
-string absStr = call String::Concat("Abs: " a)
-string cosStr = call String::Concat("Cos: " b)
-string sinStr = call String::Concat("Sin: " c)
-
-call Console::WriteLine(absStr)
-call Console::WriteLine(cosStr)
-call Console::WriteLine(sinStr)
+call Console::WriteLine(numberStr)
 call Console::WriteLine("Конец программы :>")

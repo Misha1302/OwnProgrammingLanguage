@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lexer.FrontEnd;
 using static Lexer.Lexer.LexerVariables;
-using Preprocessor = Lexer.FrontEnd.Preprocessor;
 
 namespace Lexer.Lexer;
 
@@ -14,7 +13,7 @@ public partial class Lexer
     ///     Eof - end of file
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public List<Token> GetTokens()
+    public static List<Token> GetTokens()
     {
         var token = DefaultToken;
         var tokens = new List<Token>();
@@ -25,9 +24,9 @@ public partial class Lexer
             tokens.Add(token);
         }
 
-        ConnectUnknownTokens(tokens);
-
         tokens = Preprocessor.PreprocessTokens(tokens);
+
+        ConnectUnknownTokens(tokens);
 
         LexerFixTokens.FixTokens(tokens);
 
@@ -41,7 +40,7 @@ public partial class Lexer
             var startPosition = i;
             if (tokens[i].TokenKind != Kind.Unknown) continue;
 
-            var startTokenText = new StringBuilder(tokens[startPosition].Text);
+            var startTokenText = new StringBuilder(tokens[startPosition].Text, 16);
             i++;
             while (tokens[i].TokenKind == Kind.Unknown)
             {
@@ -54,7 +53,7 @@ public partial class Lexer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    private Token GetNextToken()
+    private static Token GetNextToken()
     {
         while (true)
         {
@@ -68,14 +67,13 @@ public partial class Lexer
                 Position++;
             }
 
-
             if (Code[Position] == EOF_CHAR) return EofToken;
+
 
             var currentChar = Code[Position];
 
             if (currentChar == NEW_LINE_CHAR) return NewLineToken;
-            if (_position - 1 > 0 && Code[Position - 1] != '\\' && currentChar == StringCharacter)
-                return GetString();
+            if (currentChar == StringCharacter && Position > 0 && Code[Position - 1] != '\\') return GetString();
             if (char.IsWhiteSpace(currentChar)) return WhiteSpaceToken;
 
 
@@ -91,12 +89,12 @@ public partial class Lexer
                 continue;
             }
 
-            var isNegativeNumber = currentChar == '(' && Code[Position + 1] == '-';
+            var isNegativeNumber = currentChar == '(' && Code[Position + 1] == '-'; // example: (-6)
             if (char.IsNumber(currentChar) || isNegativeNumber)
                 return GetNextNumberToken(isNegativeNumber);
 
             foreach (var symbol in Other)
-                if (Code[_position..].StartsWith(symbol.Key))
+                if (Code[Position..].StartsWith(symbol.Key))
                 {
                     Position += symbol.Key.Length - 1;
                     return new Token(symbol.Value, symbol.Key);
@@ -106,7 +104,7 @@ public partial class Lexer
         }
     }
 
-    private Token GetString()
+    private static Token GetString()
     {
         Position++;
 
@@ -118,7 +116,7 @@ public partial class Lexer
         return new Token(Kind.String, $"{StringCharacter}{value}{StringCharacter}", value, DataType.@string);
     }
 
-    private bool GetCommand(out Token token)
+    private static bool GetCommand(out Token token)
     {
         foreach (var commandPair in Words.Where(commandPair =>
                      Code[Position..].IndexOf(commandPair.Key, StringComparison.Ordinal) == 0))
@@ -143,7 +141,7 @@ public partial class Lexer
         return false;
     }
 
-    private Token GetNextNumberToken(bool isNegativeNumber)
+    private static Token GetNextNumberToken(bool isNegativeNumber)
     {
         Token value;
 
@@ -167,21 +165,21 @@ public partial class Lexer
         }
     }
 
-    private Token GetNextHexToken()
+    private static Token GetNextHexToken()
     {
         const int numberBase = 16;
         var validCharacters = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
         return GetNextNumberToken(numberBase, validCharacters);
     }
 
-    private Token GetNextBinaryToken()
+    private static Token GetNextBinaryToken()
     {
         const int numberBase = 2;
         var validCharacters = new[] { '0', '1' };
         return GetNextNumberToken(numberBase, validCharacters);
     }
 
-    private Token GetNextNumberToken(int numberBase, char[] validCharacters)
+    private static Token GetNextNumberToken(int numberBase, char[] validCharacters)
     {
         var number = new StringBuilder();
         var ch = Code[Position];
@@ -203,7 +201,7 @@ public partial class Lexer
             : new Token(Kind.Float, numberStr, Convert.ToSingle(numberStr), DataType.float32);
     }
 
-    private Token GetNextDecimalToken()
+    private static Token GetNextDecimalToken()
     {
         const int numberBase = 10;
         var validCharacters = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.' };

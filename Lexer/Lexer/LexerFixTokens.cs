@@ -87,7 +87,7 @@ public static class LexerFixTokens
 
     private static string GetRealTypeName(Token token)
     {
-        switch (token.Type)
+        switch (token.DataType)
         {
             case DataType.int32:
                 return "Int32";
@@ -207,7 +207,7 @@ public static class LexerFixTokens
             if (IsType(tokens[i]) && tokens[i + 2].TokenKind == Kind.AssignmentSign)
             {
                 tokens[i + 1].TokenKind = Kind.CreatedVariable;
-                tokens[i + 1].Type = tokens[i].TokenKind switch
+                tokens[i + 1].DataType = tokens[i].TokenKind switch
                 {
                     Kind.StringType => DataType.@string,
                     Kind.IntType => DataType.int32,
@@ -215,7 +215,7 @@ public static class LexerFixTokens
                     Kind.BoolType => DataType.@bool
                 };
 
-                variables.Add(tokens[i + 1].Text, tokens[i + 1].Type);
+                variables.Add(tokens[i + 1].Text, tokens[i + 1].DataType);
                 i++;
             }
 
@@ -225,7 +225,7 @@ public static class LexerFixTokens
                 tokens[index].TokenKind == Kind.Unknown)
             {
                 tokens[index].TokenKind = Kind.Variable;
-                tokens[index].Type = variables[tokens[index].Text];
+                tokens[index].DataType = variables[tokens[index].Text];
             }
     }
 #pragma warning restore CS8509

@@ -68,7 +68,7 @@ public static class Rpn
 
     private static bool IsNumber(Token token)
     {
-        return token.Type is DataType.int32 or DataType.float32 or DataType.@bool or DataType.@string;
+        return token.DataType is DataType.int32 or DataType.float32 or DataType.@bool or DataType.@string;
     }
 
     private static int GetPriority(Token token)

@@ -1,4 +1,3 @@
-.assembly extern System.Private.CoreLib {}
 .assembly extern System.Console {}
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
@@ -17,47 +16,14 @@
   .method public hidebysig static void Main(string[] args) cil managed
   {
     .entrypoint
-    .locals ([0] string aStr, [1] float32 q, [2] float32 abs, [3] float32 cos, [4] float32 sin, [5] string a, [6] string b, [7] string c, [8] string absStr, [9] string cosStr, [10] string sinStr)
+    .locals ([0] string numberStr)
 call string [System.Console]System.Console::ReadLine()
-stloc.s aStr
-ldloc.s aStr
-call float32 [System.Private.CoreLib]System.Convert::ToSingle(string)
-stloc.s q
-ldloc.s q
-call float32 [System.Private.CoreLib]System.MathF::Abs(float32)
-stloc.s abs
-ldloc.s q
-call float32 [System.Private.CoreLib]System.MathF::Cos(float32)
-stloc.s cos
-ldloc.s q
-call float32 [System.Private.CoreLib]System.MathF::Sin(float32)
-stloc.s sin
-ldloca.s abs
-call instance string [System.Private.CoreLib]System.Single::ToString()
-stloc.s a
-ldloca.s cos
-call instance string [System.Private.CoreLib]System.Single::ToString()
-stloc.s b
-ldloca.s sin
-call instance string [System.Private.CoreLib]System.Single::ToString()
-stloc.s c
-ldstr "Abs: "
-ldloc.s a
-call string [System.Private.CoreLib]System.String::Concat(string, string)
-stloc.s absStr
-ldstr "Cos: "
-ldloc.s b
-call string [System.Private.CoreLib]System.String::Concat(string, string)
-stloc.s cosStr
-ldstr "Sin: "
-ldloc.s c
-call string [System.Private.CoreLib]System.String::Concat(string, string)
-stloc.s sinStr
-ldloc.s absStr
-call void [System.Console]System.Console::WriteLine(string)
-ldloc.s cosStr
-call void [System.Console]System.Console::WriteLine(string)
-ldloc.s sinStr
+stloc.s numberStr
+ldloc.s numberStr
+ldstr ", World!"
+call string [System.Runtime]System.String::Concat(string, string)
+stloc.s numberStr
+ldloc.s numberStr
 call void [System.Console]System.Console::WriteLine(string)
 ldstr "Конец программы :>"
 call void [System.Console]System.Console::WriteLine(string)

@@ -24,7 +24,7 @@ public static class Collector
             _mainLocalVariables.Add(t);
     }
 
-    private static string CreateCode(IReadOnlyList<Token> tokens)
+    private static string CreateCode(IList<Token> tokens)
     {
         _code.Clear();
 
@@ -58,7 +58,7 @@ public static class Collector
     {
         for (var i = 0; i < _mainLocalVariables.Count; i++)
         {
-            var type = _mainLocalVariables[i].Type switch
+            var type = _mainLocalVariables[i].DataType switch
             {
                 DataType.@string => STRING_TYPE,
                 DataType.int32 => INT_TYPE,
@@ -71,7 +71,7 @@ public static class Collector
     }
 
     // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
-    private static void AppendCodeFromMainMethod(IReadOnlyList<Token> tokens)
+    private static void AppendCodeFromMainMethod(IList<Token> tokens)
     {
         var variableName = string.Empty;
         for (var i = 0; i < tokens.Count - 1; i++)
@@ -80,7 +80,7 @@ public static class Collector
             if (token.IsPartOfExpression)
             {
                 i = AddExpression(tokens, i);
-                if (variableName != "")
+                if (variableName != string.Empty)
                     _code.Append($"stloc.s {variableName}\n");
             }
             else
@@ -101,15 +101,33 @@ public static class Collector
         }
     }
 
-    private static int AddExpression(IReadOnlyList<Token> tokens, int i)
+    private static int AddExpression(IList<Token> tokens, int i)
     {
+        var expressionType = GetTypeOfExpression(tokens, i);
+
+        var isStringExpression = expressionType == ExpressionType.StringExpression;
+        var isFloatExpression = expressionType == ExpressionType.FloatExpression;
+
+        var stringAfterEachType = isFloatExpression ? "conv.r4\n" : string.Empty;
+
         while (tokens[i].IsPartOfExpression)
         {
             var token = tokens[i];
+            if (IsType(token))
+            {
+                _code.Append(
+                    $"{GetPushCommand(token)} {(token.TokenKind == Kind.String ? token.Text : token.Value)}\n");
+                _code.Append(stringAfterEachType);
+            }
+            else if (IsOperator(token))
+            {
+                _code.Append($"{GetMathCommand(tokens[i], isStringExpression)}\n");
+            }
+            else
+            {
+                _code.Append($"ldloc.s {token.Text}\n");
+            }
 
-            if (IsType(token)) _code.Append($"{GetPushCommand(token)} {token.Text}\n");
-            else if (IsOperator(token)) _code.Append(GetMathCommand(tokens[i]) + "\n");
-            else _code.Append($"ldloc.s {token.Text}\n");
 
             i++;
         }
@@ -117,20 +135,52 @@ public static class Collector
         return i;
     }
 
-    private static string GetMathCommand(Token token)
+    private static ExpressionType GetTypeOfExpression(IList<Token> tokens, int i)
     {
+        var token = tokens[i];
+        while (token.IsPartOfExpression)
+        {
+            if (token.TokenKind == Kind.Division || token.DataType == DataType.float32)
+                return ExpressionType.FloatExpression;
+            switch (token.DataType)
+            {
+                case DataType.@string:
+                    return ExpressionType.StringExpression;
+                case DataType.@bool:
+                    return ExpressionType.BooleanExpression;
+                default:
+                    i++;
+                    token = tokens[i];
+                    break;
+            }
+        }
+
+        return ExpressionType.IntExpression;
+    }
+
+    private static string GetMathCommand(Token token, bool isStringExpression)
+    {
+        if (!isStringExpression)
+            return token.TokenKind switch
+            {
+                Kind.Addition => "add.ovf",
+                Kind.Subtraction => "sub.ovf",
+                Kind.Multiplication => "mul.ovf",
+                Kind.Division => "div",
+                Kind.EqualsBoolSign => "ceq",
+                Kind.NotEqualsBoolSign => $"ceq{Environment.NewLine}not",
+                Kind.GreatThanBoolSign => "cgt",
+                Kind.LessThanLessBoolSign => "clt",
+                Kind.AndBoolSign => "and",
+                Kind.OrBoolSign => "or"
+            };
+
         return token.TokenKind switch
         {
-            Kind.Addition => "add.ovf",
-            Kind.Subtraction => "sub.ovf",
-            Kind.Multiplication => "mul.ovf",
-            Kind.Division => "div.ovf",
-            Kind.EqualsBoolSign => "ceq",
-            Kind.NotEqualsBoolSign => "ceq\r\nnot",
-            Kind.GreatThanBoolSign => "cgt",
-            Kind.LessThanLessBoolSign => "clt",
-            Kind.AndBoolSign => "and",
-            Kind.OrBoolSign => "or"
+            Kind.Addition => "call string [System.Runtime]System.String::Concat(string, string)",
+            Kind.EqualsBoolSign => "call string [System.Runtime]System.String::Concat(string, string)",
+            Kind.NotEqualsBoolSign =>
+                $"call string [System.Runtime]System.String::Concat(string, string){Environment.NewLine}not"
         };
     }
 
@@ -147,7 +197,7 @@ public static class Collector
             or Kind.LessThanLessBoolSign or Kind.AndBoolSign or Kind.OrBoolSign;
     }
 
-    private static int AppendMethodCall(IReadOnlyList<Token> tokens, int i, string variableName = "")
+    private static int AppendMethodCall(IList<Token> tokens, int i, string variableName = "")
     {
         var args = new List<Token>(4);
         var method = new List<Token>(4);
@@ -158,10 +208,10 @@ public static class Collector
         if (i - 2 >= 0)
         {
             if (tokens[i - 1].TokenKind == Kind.AssignmentSign)
-                dataType = tokens[i - 2].Type;
+                dataType = tokens[i - 2].DataType;
 
             if (i - 4 >= 0 && tokens[i - 3].TokenKind == Kind.AssignmentSign)
-                dataType = tokens[i - 4].Type;
+                dataType = tokens[i - 4].DataType;
             if (tokens[i - 2].TokenKind == Kind.From)
                 fromVariable = tokens[i - 1];
         }
@@ -183,7 +233,7 @@ public static class Collector
 
         AppendTypesInMethod("(", args, ")\n");
 
-        if (variableName != "") _code.Append($"stloc.s {variableName}\n");
+        if (variableName != string.Empty) _code.Append($"stloc.s {variableName}\n");
 
         return i;
     }
@@ -195,12 +245,12 @@ public static class Collector
             var type = DataType.@null;
             var tempDebug = args.GetRange(expressionPosition.startPosition, expressionPosition.count);
             foreach (var arg in tempDebug)
-                if (IsBoolOperator(arg) || arg.Type == DataType.@bool)
+                if (IsBoolOperator(arg) || arg.DataType == DataType.@bool)
                 {
                     type = DataType.@bool;
                     break;
                 }
-                else if (arg.Type == DataType.@string)
+                else if (arg.DataType == DataType.@string)
                 {
                     type = DataType.@string;
                 }
@@ -210,35 +260,36 @@ public static class Collector
                 }
 
             args.RemoveRange(expressionPosition.startPosition, expressionPosition.count);
-            args.Insert(expressionPosition.startPosition, new Token(Kind.Unknown, "", type: type));
+            args.Insert(expressionPosition.startPosition, new Token(Kind.Unknown, string.Empty, type: type));
         }
 
         _code.Append(start);
         for (var index = 0; index < args.Count; index++)
         {
-            _code.Append(args[index].Type);
+            _code.Append(args[index].DataType);
             if (index + 1 < args.Count) _code.Append(", ");
         }
 
         _code.Append(end);
     }
 
-    private static void PushArguments(IEnumerable<Token> args)
+    private static void PushArguments(IReadOnlyCollection<Token> args)
     {
+        var isStringExpression = args.Select(x => x.DataType).Contains(DataType.@string);
         foreach (var pushString in from arg in args
                  let variable = _mainLocalVariables.FirstOrDefault(x => x.Text == arg.Text)
-                 select PushCommand(variable, arg))
+                 select PushCommand(variable, arg, isStringExpression))
             _code.Append(pushString);
     }
 
-    private static string PushCommand(Token? variable, Token arg)
+    private static string PushCommand(Token? variable, Token arg, bool isStringExpression)
     {
         if (variable != null) return $"ldloc.s {variable.Text}\n";
 
-        return IsOperator(arg) ? $"{GetMathCommand(arg)}\n" : $"{GetPushCommand(arg)} {arg.Text}\n";
+        return IsOperator(arg) ? $"{GetMathCommand(arg, isStringExpression)}\n" : $"{GetPushCommand(arg)} {arg.Text}\n";
     }
 
-    private static int GetMethodArgs(IReadOnlyList<Token> tokens, int i, ICollection<Token> args)
+    private static int GetMethodArgs(IList<Token> tokens, int i, ICollection<Token> args)
     {
         i++;
         while (tokens[i].TokenKind != Kind.CloseParenthesis)
@@ -250,7 +301,7 @@ public static class Collector
         return i;
     }
 
-    private static int GetMethodTokens(IReadOnlyList<Token> tokens, int i, ICollection<Token> method)
+    private static int GetMethodTokens(IList<Token> tokens, int i, ICollection<Token> method)
     {
         i++;
         while (tokens[i].TokenKind != Kind.OpenParenthesis)
@@ -267,7 +318,7 @@ public static class Collector
         return token.TokenKind is Kind.String or Kind.Float or Kind.Int or Kind.Void or Kind.Bool;
     }
 
-    private static int AppendVariablesAssignment(IReadOnlyList<Token> tokens, int i)
+    private static int AppendVariablesAssignment(IList<Token> tokens, int i)
     {
         var value = tokens[i + 1];
         var varName = tokens[i - 1].Text;
@@ -292,7 +343,7 @@ public static class Collector
 
     private static string GetPushCommand(Token varType)
     {
-        var command = varType.Type switch
+        var command = varType.DataType switch
         {
             DataType.int32 => PUSH_INT_CONSTANT,
             DataType.@bool => PUSH_INT_CONSTANT,
@@ -303,4 +354,12 @@ public static class Collector
     }
 
 #pragma warning restore CS8509
+}
+
+public enum ExpressionType
+{
+    FloatExpression,
+    IntExpression,
+    BooleanExpression,
+    StringExpression
 }

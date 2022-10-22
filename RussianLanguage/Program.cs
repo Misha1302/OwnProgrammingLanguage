@@ -6,7 +6,7 @@ namespace RussianLanguage;
 
 public static class Program
 {
-    private static string _code = null!;
+    private static string _code = string.Empty;
 
     private static void Main(string[] args)
     {
@@ -14,22 +14,22 @@ public static class Program
     }
 
 
-    private static void MainInternal(IReadOnlyList<string> strings)
+    private static void MainInternal(IEnumerable<string> strings)
     {
-        _code = File.ReadAllText(strings.Count > 0 ? strings[0] : "code.sil");
+        _code = File.ReadAllText(strings.FirstOrDefault() ?? "code.sil");
 
         var stopwatch = Stopwatch.StartNew();
 
 
-        SetVariables(out var stringCharacter, out var language);
+        SetVariables(out var language);
 
-        var tokens = GetTokens(stringCharacter, _code);
+        var tokens = GetTokens(_code);
         var ilCode = Collector.GetCode(tokens);
         var codeCompilationStatus = IlController.CompileCodeToIl(ilCode);
 
 
         stopwatch.Stop();
-        Console.WriteLine(stopwatch.ElapsedMilliseconds);
+        Console.WriteLine($"compilation time: {stopwatch.ElapsedMilliseconds}ms");
 
 
         if (!codeCompilationStatus)
@@ -38,29 +38,19 @@ public static class Program
         IlController.StartIlCode();
     }
 
-    private static char GetStringCharacter(string stringCharacterParameter, Language? language)
-    {
-        if (language == null) ExceptionThrower.ThrowException(ExceptionType.UnknownLanguage, null);
-        if (stringCharacterParameter.Length > 1)
-            ExceptionThrower.ThrowException(ExceptionType.StringCharacterCannotBeString, language);
-
-        return stringCharacterParameter[0];
-    }
-
-    private static void SetVariables(out char stringCharacter, out Language? language)
+    private static void SetVariables(out Language? language)
     {
         var parameters = XmlReaderDictionary.GetXmlElements("src/xml/settings.xml");
-        var stringCharacterParameter = parameters["stringCharacter"];
         var languageParameter = parameters["lng"];
 
         language = !Enum.TryParse(languageParameter, true, out Language lng) ? null : lng;
-        stringCharacter = GetStringCharacter(stringCharacterParameter, language);
+        if (language == null) ExceptionThrower.ThrowException(ExceptionType.UnknownLanguage, null);
     }
 
-    private static List<Token> GetTokens(char stringCharacter, in string code)
+    private static List<Token> GetTokens(in string code)
     {
-        var lexer = new Lexer.Lexer.Lexer(code, stringCharacter);
-        var tokens = lexer.GetTokens();
+        var lexer = new Lexer.Lexer.Lexer(code);
+        var tokens = Lexer.Lexer.Lexer.GetTokens();
         return tokens;
     }
 }
