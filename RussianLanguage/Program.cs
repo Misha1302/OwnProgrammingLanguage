@@ -19,9 +19,7 @@ public static class Program
         _code = File.ReadAllText(strings.FirstOrDefault() ?? "code.sil");
 
         var stopwatch = Stopwatch.StartNew();
-
-
-        SetVariables(out var language);
+        
 
         var tokens = GetTokens(_code);
         var ilCode = Collector.GetCode(tokens);
@@ -33,18 +31,28 @@ public static class Program
 
 
         if (!codeCompilationStatus)
-            ExceptionThrower.ThrowException(ExceptionType.CodeWithErrors, language);
+            ExceptionThrower.ThrowException(ExceptionType.CodeWithErrors, GetLanguage());
 
         IlController.StartIlCode();
     }
 
-    private static void SetVariables(out Language? language)
+    private static bool CompileCode(string code)
+    {
+        var tokens = GetTokens(code);
+        var ilCode = Collector.GetCode(tokens);
+        var codeCompilationStatus = IlController.CompileCodeToIl(ilCode);
+        return codeCompilationStatus;
+    }
+
+    private static Language GetLanguage()
     {
         var parameters = XmlReaderDictionary.GetXmlElements("src/xml/settings.xml");
         var languageParameter = parameters["lng"];
 
-        language = !Enum.TryParse(languageParameter, true, out Language lng) ? null : lng;
+        var language = !Enum.TryParse(languageParameter, true, out Language lng) ? (Language?)null : lng;
         if (language == null) ExceptionThrower.ThrowException(ExceptionType.UnknownLanguage, null);
+
+        return (Language)language!;
     }
 
     private static List<Token> GetTokens(in string code)

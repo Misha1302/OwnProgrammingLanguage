@@ -12,12 +12,12 @@ public static class XmlReaderDictionary
         var xRoot = xDoc.DocumentElement;
         if (xRoot == null) throw new Exception("Xml document element is null");
 
-        var xmlElements = new Dictionary<string, string>(16);
+        var xmlElements = new Dictionary<string, string>(2);
 
         foreach (XmlElement xNode in xRoot)
         {
             var text = xNode.InnerText;
-            if (text[0] == '\\') text = Directory.GetCurrentDirectory() + text;
+            if (text[0] == '\\') text = Path.GetFullPath(text);
             xmlElements.Add(xNode.Name, text);
         }
 

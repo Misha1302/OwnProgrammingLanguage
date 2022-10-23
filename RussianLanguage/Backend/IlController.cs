@@ -5,26 +5,33 @@ namespace RussianLanguage.Backend;
 
 public static class IlController
 {
-    public static bool CompileCodeToIl(string code)
-    {
-        File.WriteAllText("cil\\Program.il", code);
+    private static readonly ProcessStartInfo _processStartInfo;
+    private static readonly StringBuilder _stringBuilder = new(1024);
 
-        var processStartInfo = new ProcessStartInfo
+    static IlController()
+    {
+        _processStartInfo = new ProcessStartInfo
         {
             UseShellExecute = false,
             CreateNoWindow = false,
             RedirectStandardOutput = true,
             FileName = Directory.GetCurrentDirectory() + "\\src\\cmd\\compile.cmd"
         };
+    }
+
+    public static bool CompileCodeToIl(string code)
+    {
+        File.WriteAllText("cil\\Program.il", code);
+
         var proc = new Process();
-        proc.StartInfo = processStartInfo;
+        proc.StartInfo = _processStartInfo;
         proc.Start();
 
-        var stringBuilder = new StringBuilder(512);
-        while (!stringBuilder.ToString().Contains("pause"))
-            stringBuilder.Append(proc.StandardOutput.ReadLine() + '\n');
+        _stringBuilder.Clear();
+        while (!_stringBuilder.ToString().EndsWith("pause\n"))
+            _stringBuilder.Append(proc.StandardOutput.ReadLine() + '\n');
 
-        var str = stringBuilder.ToString();
+        var str = _stringBuilder.ToString();
         proc.Kill();
 
         return !str.Contains("***** FAILURE *****");

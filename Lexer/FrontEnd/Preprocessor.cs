@@ -8,13 +8,12 @@ public static class Preprocessor
     public const char STRING_CHARACTER_INTERNAL = '\"';
 
     /// <summary>
-    ///     Does not significantly change the code and breaks it into lines.
-    ///     Removes comments and blank lines
+    ///     Adds EOF character and removes all comments
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static List<CodeLine> Preprocess(string code)
     {
-        code = code.Replace("\0", string.Empty) + '\0';
+        code = Regex.Replace(code, "(//.*)|(/\\*(.|\n)*\\*/)", string.Empty, RegexOptions.Compiled) + '\0';
 
         var split = code.Split('\n');
         var lines = new List<CodeLine>(split.Length);
@@ -26,7 +25,7 @@ public static class Preprocessor
 
     private static List<CodeLine> ClearCodeLines(List<CodeLine> lines)
     {
-        lines = lines.Select((x, i) => new CodeLine(Regex.Replace(x.Line, "(//.*)|(/\\*.*\\*/)", string.Empty), i)).ToList();
+        lines = lines.Select((x, i) => new CodeLine(x.Line, i)).ToList();
         lines = lines.Where(x => !string.IsNullOrWhiteSpace(x.Line)).ToList();
         return lines;
     }

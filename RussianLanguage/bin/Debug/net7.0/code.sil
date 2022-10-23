@@ -1,8 +1,4 @@
 using "System"
 
-string numberStr = call Console::ReadLine()
-
-numberStr = [numberStr + ", World!"]
-
-call Console::WriteLine(numberStr)
-call Console::WriteLine("Конец программы :>")
+string a = call Console::ReadLine()
+call Console::WriteLine(a)

@@ -178,9 +178,9 @@ public static class Collector
         return token.TokenKind switch
         {
             Kind.Addition => "call string [System.Runtime]System.String::Concat(string, string)",
-            Kind.EqualsBoolSign => "call string [System.Runtime]System.String::Concat(string, string)",
+            Kind.EqualsBoolSign => "call bool [System.Runtime]System.String::op_Equality(string, string)",
             Kind.NotEqualsBoolSign =>
-                $"call string [System.Runtime]System.String::Concat(string, string){Environment.NewLine}not"
+                $"call bool [System.Runtime]System.String::op_Inequality(string, string){Environment.NewLine}"
         };
     }
 
@@ -202,8 +202,9 @@ public static class Collector
         var args = new List<Token>(4);
         var method = new List<Token>(4);
 
-        Token? fromVariable = null;
+        
         var dataType = DataType.@null;
+        Token? fromVariable = null;
 
         if (i - 2 >= 0)
         {
@@ -219,6 +220,7 @@ public static class Collector
         i = GetMethodTokens(tokens, i, method);
 
         i = GetMethodArgs(tokens, i, args);
+        
 
         if (fromVariable != null) _code.Append($"ldloca.s {fromVariable.Text}\n");
 

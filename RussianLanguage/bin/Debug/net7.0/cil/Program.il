@@ -1,7 +1,6 @@
 .assembly extern System.Console {}
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
-.assembly extern System.Console {}
 
 .assembly Program
 {
@@ -16,16 +15,10 @@
   .method public hidebysig static void Main(string[] args) cil managed
   {
     .entrypoint
-    .locals ([0] string numberStr)
+    .locals ([0] string a)
 call string [System.Console]System.Console::ReadLine()
-stloc.s numberStr
-ldloc.s numberStr
-ldstr ", World!"
-call string [System.Runtime]System.String::Concat(string, string)
-stloc.s numberStr
-ldloc.s numberStr
-call void [System.Console]System.Console::WriteLine(string)
-ldstr "Конец программы :>"
+stloc.s a
+ldloc.s a
 call void [System.Console]System.Console::WriteLine(string)
     call void Program::EndOfMain()
     ret

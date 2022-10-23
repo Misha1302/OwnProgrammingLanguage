@@ -1,4 +1,5 @@
-﻿using Lexer.FrontEnd;
+﻿using System.Reflection;
+using Lexer.FrontEnd;
 
 namespace Lexer.Lexer;
 
@@ -6,6 +7,7 @@ public static class LexerFixTokens
 {
     private static readonly List<string> _usingNamespaces = new();
     private static readonly List<string> _assemblies = new();
+    private static readonly Assembly[] _currentDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
 
     public static void FixTokens(List<Token> tokens)
     {
@@ -49,39 +51,45 @@ public static class LexerFixTokens
                 i++;
                 var localI = i;
                 if (isFromCall) tokens[localI].Text = $"{GetRealTypeName(tokens[localI - 2])}";
-                foreach (var @class in from usingNamespace in _usingNamespaces
-                         select GetClassesOrValueTypes(GetFullName(usingNamespace, localI, isFromCall)).ToArray()
-                         into classes
-                         where classes.Length > 0
-                         select classes.First())
-                {
-                    var assemblyName = GetAssembliesThatHaveClass(@class).First();
-                    var token = new Token(Kind.Unknown, " ");
 
-                    token.Text += $"[{assemblyName}]";
-                    if (tokens[localI].TokenKind != Kind.MethodSeparator) token.Text += @class.Split('.')[0] + '.';
-                    else token.Text += @class;
+                AppendNamespaceOrClass(tokens, localI, isFromCall, i);
+            }
+    }
 
-                    if (isFromCall)
-                    {
-                        token.Text += "::";
-                        tokens[localI] = token;
-                    }
-                    else
-                    {
-                        tokens.Insert(i, token);
-                    }
+    private static void AppendNamespaceOrClass(IList<Token> tokens, int localI, bool isFromCall, int i)
+    {
+        foreach (var @class in from usingNamespace in _usingNamespaces
+                 select GetClassesOrValueTypes(GetFullName(usingNamespace))
+                 into classes
+                 where classes.Any()
+                 select classes.First())
+        {
+            var assemblyName = GetAssembliesThatHaveClass(@class).First();
+            var token = new Token(Kind.Unknown, " ");
 
-                    _assemblies.Add(assemblyName);
+            token.Text += $"[{assemblyName}]";
+            if (tokens[localI].TokenKind != Kind.MethodSeparator) token.Text += @class.Split('.')[0] + '.';
+            else token.Text += @class;
 
-                    break;
-                }
+            if (isFromCall)
+            {
+                token.Text += "::";
+                tokens[localI] = token;
+            }
+            else
+            {
+                tokens.Insert(i, token);
             }
 
-        string GetFullName(string usingNamespace, int i, bool isFromCall)
+            _assemblies.Add(assemblyName);
+            
+            break;
+        }
+
+        string GetFullName(string usingNamespace)
         {
             return
-                $"{usingNamespace}.{(tokens[i].TokenKind == Kind.MethodSeparator && !isFromCall ? tokens[i + 1].Text : tokens[i].Text)}";
+                $"{usingNamespace}.{(tokens[localI].TokenKind == Kind.MethodSeparator && !isFromCall ? tokens[localI + 1].Text : tokens[localI].Text)}";
         }
     }
 
@@ -104,7 +112,7 @@ public static class LexerFixTokens
 
     private static IEnumerable<string> GetClassesOrValueTypes(string fullName)
     {
-        var s = (from assembly in AppDomain.CurrentDomain.GetAssemblies()
+        var s = (from assembly in _currentDomainAssemblies
             from type in assembly.GetTypes()
             where NamespaceHaveClassOrValueType(type)
             select type).ToArray();
@@ -121,7 +129,7 @@ public static class LexerFixTokens
 
     private static IEnumerable<string> GetAssembliesThatHaveClass(string fullName)
     {
-        var s = from assembly in AppDomain.CurrentDomain.GetAssemblies()
+        var s = from assembly in _currentDomainAssemblies
             from type in assembly.GetTypes()
             where type.IsPublic
             where type.FullName == fullName

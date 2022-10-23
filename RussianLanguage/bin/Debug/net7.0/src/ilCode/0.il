@@ -1,6 +1,5 @@
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
-.assembly extern System.Console {}
 
 .assembly Program
 {
