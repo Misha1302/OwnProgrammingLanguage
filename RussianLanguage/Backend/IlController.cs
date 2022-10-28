@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace RussianLanguage.Backend;
@@ -8,6 +9,7 @@ public static class IlController
     private static readonly ProcessStartInfo _processStartInfo;
     private static readonly StringBuilder _stringBuilder = new(1024);
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     static IlController()
     {
         _processStartInfo = new ProcessStartInfo
@@ -19,6 +21,7 @@ public static class IlController
         };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static bool CompileCodeToIl(string code)
     {
         File.WriteAllText("cil\\Program.il", code);
@@ -37,6 +40,7 @@ public static class IlController
         return !str.Contains("***** FAILURE *****");
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void StartIlCode()
     {
         var processStartInfo = new ProcessStartInfo

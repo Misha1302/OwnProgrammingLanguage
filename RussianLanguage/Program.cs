@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
-using Lexer.FrontEnd;
+using System.Runtime.CompilerServices;
 using RussianLanguage.Backend;
+using RussianLanguage.Exceptions;
+using RussianLanguage.Xml;
 
 namespace RussianLanguage;
 
@@ -8,26 +10,22 @@ public static class Program
 {
     private static string _code = string.Empty;
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void Main(string[] args)
     {
         MainInternal(args);
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void MainInternal(IEnumerable<string> strings)
     {
         _code = File.ReadAllText(strings.FirstOrDefault() ?? "code.sil");
 
         var stopwatch = Stopwatch.StartNew();
-        
-
-        var tokens = GetTokens(_code);
-        var ilCode = Collector.GetCode(tokens);
-        var codeCompilationStatus = IlController.CompileCodeToIl(ilCode);
-
-
+        var codeCompilationStatus = CompileCode(_code);
         stopwatch.Stop();
-        Console.WriteLine($"compilation time: {stopwatch.ElapsedMilliseconds}ms");
+        Console.WriteLine($"Compilation time: {stopwatch.ElapsedMilliseconds} ms");
 
 
         if (!codeCompilationStatus)
@@ -36,14 +34,16 @@ public static class Program
         IlController.StartIlCode();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool CompileCode(string code)
     {
-        var tokens = GetTokens(code);
+        var tokens = Lexer.Lexer.Lexer.GetTokens(code);
         var ilCode = Collector.GetCode(tokens);
         var codeCompilationStatus = IlController.CompileCodeToIl(ilCode);
         return codeCompilationStatus;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Language GetLanguage()
     {
         var parameters = XmlReaderDictionary.GetXmlElements("src/xml/settings.xml");
@@ -53,12 +53,5 @@ public static class Program
         if (language == null) ExceptionThrower.ThrowException(ExceptionType.UnknownLanguage, null);
 
         return (Language)language!;
-    }
-
-    private static List<Token> GetTokens(in string code)
-    {
-        var lexer = new Lexer.Lexer.Lexer(code);
-        var tokens = Lexer.Lexer.Lexer.GetTokens();
-        return tokens;
     }
 }

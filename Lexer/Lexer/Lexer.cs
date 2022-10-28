@@ -6,15 +6,24 @@ using static Lexer.Lexer.LexerVariables;
 
 namespace Lexer.Lexer;
 
-public partial class Lexer
+public class Lexer
 {
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+    private static void Init(string code)
+    {
+        CodeLines = Preprocessor.Preprocess(code);
+        StringCharacter = Preprocessor.STRING_CHARACTER_INTERNAL;
+    }
+
     /// <summary>
     ///     Gets all tokens from code<br />
     ///     Eof - end of file
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public static List<Token> GetTokens()
+    public static List<Token> GetTokens(string code)
     {
+        Init(code);
+
         var token = DefaultToken;
         var tokens = new List<Token>();
 
@@ -33,6 +42,7 @@ public partial class Lexer
         return tokens;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void ConnectUnknownTokens(IList<Token> tokens)
     {
         for (var i = 0; i < tokens.Count; i++)
@@ -104,6 +114,7 @@ public partial class Lexer
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetString()
     {
         Position++;
@@ -116,6 +127,7 @@ public partial class Lexer
         return new Token(Kind.String, $"{StringCharacter}{value}{StringCharacter}", value, DataType.@string);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool GetCommand(out Token token)
     {
         foreach (var commandPair in Words.Where(commandPair =>
@@ -141,6 +153,7 @@ public partial class Lexer
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextNumberToken(bool isNegativeNumber)
     {
         Token value;
@@ -165,6 +178,7 @@ public partial class Lexer
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextHexToken()
     {
         const int numberBase = 16;
@@ -172,6 +186,7 @@ public partial class Lexer
         return GetNextNumberToken(numberBase, validCharacters);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextBinaryToken()
     {
         const int numberBase = 2;
@@ -179,6 +194,7 @@ public partial class Lexer
         return GetNextNumberToken(numberBase, validCharacters);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextNumberToken(int numberBase, char[] validCharacters)
     {
         var number = new StringBuilder();
@@ -201,6 +217,7 @@ public partial class Lexer
             : new Token(Kind.Float, numberStr, Convert.ToSingle(numberStr), DataType.float32);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextDecimalToken()
     {
         const int numberBase = 10;

@@ -1,0 +1,14 @@
+using "System"
+
+string numberStr = call Console::ReadLine()
+
+bool numberEq = [numberStr == "q"]
+bool numberNotEq = [numberStr != "q"]
+
+string numberStrNotEq = from numberNotEq call ::ToString()
+string numberStrEq = from numberEq call ::ToString()
+
+call Console::WriteLine(numberStrNotEq)
+call Console::WriteLine(numberStrEq)
+
+call Console::WriteLine("Конец программы :>")

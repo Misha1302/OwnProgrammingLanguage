@@ -48,9 +48,9 @@ internal static class LexerVariables
         { "float", Kind.FloatType },
         { "void", Kind.VoidType },
         { "call", Kind.Call },
-        { "using", Kind.Using }
-        // { "if", Kind.If },
-        // { "else", Kind.Else }
+        { "using", Kind.Using },
+        { "if", Kind.If },
+        { "else", Kind.Else }
     };
 
     internal static readonly IReadOnlyDictionary<string, Kind> Other = new Dictionary<string, Kind>
@@ -60,6 +60,9 @@ internal static class LexerVariables
 
         { "[", Kind.OpenBracket },
         { "]", Kind.CloseBracket },
+
+        { "{", Kind.OpenBrace },
+        { "}", Kind.CloseBrace },
 
         { ",", Kind.Comma },
         { ".", Kind.Dot },

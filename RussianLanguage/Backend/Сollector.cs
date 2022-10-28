@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.CompilerServices;
+using System.Text;
 using Lexer.FrontEnd;
 using Lexer.Lexer;
 using static RussianLanguage.Backend.CollectorConstants;
@@ -7,9 +8,17 @@ namespace RussianLanguage.Backend;
 
 public static class Collector
 {
+    private static int _conditionNumber;
     private static readonly StringBuilder _code = new();
     private static readonly List<Token> _mainLocalVariables = new();
+    private static readonly List<Method> _methods;
 
+    static Collector()
+    {
+        _methods = LexerFixTokens.Methods;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static string GetCode(List<Token> tokens)
     {
         SetLocalVariables(tokens);
@@ -17,6 +26,7 @@ public static class Collector
         return CreateCode(tokens);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void SetLocalVariables(IEnumerable<Token> tokens)
     {
         _mainLocalVariables.Clear();
@@ -24,7 +34,8 @@ public static class Collector
             _mainLocalVariables.Add(t);
     }
 
-    private static string CreateCode(IList<Token> tokens)
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+    private static string CreateCode(List<Token> tokens)
     {
         _code.Clear();
 
@@ -46,6 +57,7 @@ public static class Collector
         return q;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void AddAssemblies(IEnumerable<Token> tokens)
     {
         foreach (var t in tokens)
@@ -54,6 +66,7 @@ public static class Collector
     }
 
 #pragma warning disable CS8509 // The 'switch' expression does not handle all possible inputs (it is not exhaustive). For example, the pattern 'Kind.Eof' is not covered.
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void InitLocalVariables()
     {
         for (var i = 0; i < _mainLocalVariables.Count; i++)
@@ -71,7 +84,8 @@ public static class Collector
     }
 
     // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
-    private static void AppendCodeFromMainMethod(IList<Token> tokens)
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+    private static void AppendCodeFromMainMethod(List<Token> tokens)
     {
         var variableName = string.Empty;
         for (var i = 0; i < tokens.Count - 1; i++)
@@ -96,11 +110,70 @@ public static class Collector
                         i = AppendMethodCall(tokens, i, variableName);
                         variableName = string.Empty;
                         break;
+                    case Kind.If:
+                        i++;
+                        i = AppendCondition(tokens, i);
+                        break;
                 }
             }
         }
     }
 
+    private static int AppendCondition(List<Token> tokens, int i)
+    {
+        _conditionNumber++;
+        i = AddExpression(tokens, i) + 1; // + 1 is OpenBracket
+        _code.Append($"brfalse.s else{_conditionNumber}\n");
+
+        var startI = i;
+        var openBracketsCount = 1;
+
+        while (openBracketsCount != 0)
+            switch (tokens[++i].TokenKind)
+            {
+                case Kind.OpenBrace:
+                    openBracketsCount++;
+                    break;
+                case Kind.CloseBrace:
+                    openBracketsCount--;
+                    break;
+            }
+
+        var count = i - startI;
+        var internalTokens = tokens.GetRange(startI, count);
+
+        AppendCodeFromMainMethod(internalTokens);
+
+        _code.Append($"br.s out{_conditionNumber}\n");
+        _code.Append($"else{_conditionNumber}:\n");
+        i++;
+        if (tokens[i].TokenKind == Kind.Else)
+        {
+            i++;
+            startI = i;
+            openBracketsCount = 1;
+
+            while (openBracketsCount != 0)
+                switch (tokens[++i].TokenKind)
+                {
+                    case Kind.OpenBrace:
+                        openBracketsCount++;
+                        break;
+                    case Kind.CloseBrace:
+                        openBracketsCount--;
+                        break;
+                }
+
+            count = i - startI;
+            internalTokens = tokens.GetRange(startI, count);
+            AppendCodeFromMainMethod(internalTokens);
+        }
+
+        _code.Append($"out{_conditionNumber}:\n");
+        return i;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static int AddExpression(IList<Token> tokens, int i)
     {
         var expressionType = GetTypeOfExpression(tokens, i);
@@ -135,6 +208,7 @@ public static class Collector
         return i;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static ExpressionType GetTypeOfExpression(IList<Token> tokens, int i)
     {
         var token = tokens[i];
@@ -158,6 +232,7 @@ public static class Collector
         return ExpressionType.IntExpression;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static string GetMathCommand(Token token, bool isStringExpression)
     {
         if (!isStringExpression)
@@ -184,6 +259,7 @@ public static class Collector
         };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool IsOperator(Token token)
     {
         return token.TokenKind is Kind.Addition or Kind.Subtraction or Kind.Multiplication or Kind.Division
@@ -191,55 +267,63 @@ public static class Collector
             or Kind.AndBoolSign or Kind.OrBoolSign;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool IsBoolOperator(Token token)
     {
         return token.TokenKind is Kind.EqualsBoolSign or Kind.NotEqualsBoolSign or Kind.GreatThanBoolSign
             or Kind.LessThanLessBoolSign or Kind.AndBoolSign or Kind.OrBoolSign;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static int AppendMethodCall(IList<Token> tokens, int i, string variableName = "")
     {
         var args = new List<Token>(4);
         var method = new List<Token>(4);
 
-        
-        var dataType = DataType.@null;
+
         Token? fromVariable = null;
-
         if (i - 2 >= 0)
-        {
-            if (tokens[i - 1].TokenKind == Kind.AssignmentSign)
-                dataType = tokens[i - 2].DataType;
-
-            if (i - 4 >= 0 && tokens[i - 3].TokenKind == Kind.AssignmentSign)
-                dataType = tokens[i - 4].DataType;
             if (tokens[i - 2].TokenKind == Kind.From)
                 fromVariable = tokens[i - 1];
-        }
+
 
         i = GetMethodTokens(tokens, i, method);
 
         i = GetMethodArgs(tokens, i, args);
-        
 
-        if (fromVariable != null) _code.Append($"ldloca.s {fromVariable.Text}\n");
+
+        if (fromVariable != null)
+            _code.Append(fromVariable.DataType != DataType.@string
+                ? $"ldloca.s {fromVariable.Text}\n"
+                : $"ldloc.s {fromVariable.Text}\n");
 
         PushArguments(args);
 
-        var stringDataType = dataType == DataType.@null ? "void" : dataType.ToString();
-        _code.Append(fromVariable == null
-            ? $"call {stringDataType}"
-            : $"call instance {stringDataType}");
+        _code.Append("call ");
+
+        var methodFullName = string.Join("", method.Select(x => x.Text));
+
+        if (fromVariable != null) _code.Append("instance ");
+
+        var methodName = methodFullName[(methodFullName.IndexOf(']') + 1)..];
+        var dataType = _methods.First(x => x.MethodName == methodName).DataType;
+        _code.Append($"{(dataType == DataType.@null ? "void" : dataType.ToString())} ");
+
 
         foreach (var m in method) _code.Append(m.Text);
 
         AppendTypesInMethod("(", args, ")\n");
 
-        if (variableName != string.Empty) _code.Append($"stloc.s {variableName}\n");
+        if (variableName != string.Empty)
+            _code.Append($"stloc.s {variableName}\n");
+        else if (dataType != DataType.@null) 
+            _code.Append("pop\n");
+
 
         return i;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void AppendTypesInMethod(string start, List<Token> args, string end)
     {
         foreach (var expressionPosition in LexerFixTokens.GetExpressionsPositions(args))
@@ -275,6 +359,7 @@ public static class Collector
         _code.Append(end);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void PushArguments(IReadOnlyCollection<Token> args)
     {
         var isStringExpression = args.Select(x => x.DataType).Contains(DataType.@string);
@@ -284,6 +369,7 @@ public static class Collector
             _code.Append(pushString);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static string PushCommand(Token? variable, Token arg, bool isStringExpression)
     {
         if (variable != null) return $"ldloc.s {variable.Text}\n";
@@ -303,6 +389,7 @@ public static class Collector
         return i;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static int GetMethodTokens(IList<Token> tokens, int i, ICollection<Token> method)
     {
         i++;
@@ -315,11 +402,13 @@ public static class Collector
         return i;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool IsType(Token token)
     {
         return token.TokenKind is Kind.String or Kind.Float or Kind.Int or Kind.Void or Kind.Bool;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static int AppendVariablesAssignment(IList<Token> tokens, int i)
     {
         var value = tokens[i + 1];
@@ -343,6 +432,7 @@ public static class Collector
         return i;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static string GetPushCommand(Token varType)
     {
         var command = varType.DataType switch
@@ -356,12 +446,4 @@ public static class Collector
     }
 
 #pragma warning restore CS8509
-}
-
-public enum ExpressionType
-{
-    FloatExpression,
-    IntExpression,
-    BooleanExpression,
-    StringExpression
 }

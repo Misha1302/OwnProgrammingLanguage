@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using Lexer.FrontEnd;
 
 namespace Lexer.Lexer;
@@ -7,8 +8,14 @@ public static class LexerFixTokens
 {
     private static readonly List<string> _usingNamespaces = new();
     private static readonly List<string> _assemblies = new();
-    private static readonly Assembly[] _currentDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
 
+    private static readonly Assembly[] _currentDomainAssemblies = Assembly.GetExecutingAssembly()
+        .GetReferencedAssemblies().Select(x => Assembly.Load(x.ToString()))
+        .Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray();
+
+    public static readonly List<Method> Methods = new();
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void FixTokens(List<Token> tokens)
     {
         SetUsingNamespaces(tokens);
@@ -19,12 +26,14 @@ public static class LexerFixTokens
         AddAssemblies(tokens);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void AddAssemblies(IList<Token> tokens)
     {
         foreach (var assembly in _assemblies.Distinct())
             tokens.Insert(0, new Token(Kind.Extern, $".assembly extern {assembly} {{}}"));
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void SetMethods(IList<Token> tokens)
     {
         for (var i = 0; i < tokens.Count; i++)
@@ -41,6 +50,7 @@ public static class LexerFixTokens
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void SetClassesNamespaces(IList<Token> tokens)
     {
         for (var i = 0; i < tokens.Count; i++)
@@ -56,6 +66,7 @@ public static class LexerFixTokens
             }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void AppendNamespaceOrClass(IList<Token> tokens, int localI, bool isFromCall, int i)
     {
         foreach (var @class in from usingNamespace in _usingNamespaces
@@ -64,12 +75,24 @@ public static class LexerFixTokens
                  where classes.Any()
                  select classes.First())
         {
+            Method method;
             var assemblyName = GetAssembliesThatHaveClass(@class).First();
             var token = new Token(Kind.Unknown, " ");
 
             token.Text += $"[{assemblyName}]";
-            if (tokens[localI].TokenKind != Kind.MethodSeparator) token.Text += @class.Split('.')[0] + '.';
-            else token.Text += @class;
+            if (tokens[localI].TokenKind != Kind.MethodSeparator)
+            {
+                token.Text += @class.Split('.')[0] + '.';
+                method = GetInfoAboutMethod($"{@class}{tokens[localI + 1].Text}{tokens[localI + 2].Text}");
+            }
+            else
+            {
+                token.Text += @class;
+                method = GetInfoAboutMethod($"{@class}::{tokens[localI + 1].Text}");
+            }
+
+            if(!Methods.Contains(method)) Methods.Add(method);
+
 
             if (isFromCall)
             {
@@ -82,7 +105,8 @@ public static class LexerFixTokens
             }
 
             _assemblies.Add(assemblyName);
-            
+
+
             break;
         }
 
@@ -93,6 +117,36 @@ public static class LexerFixTokens
         }
     }
 
+    private static Method GetInfoAboutMethod(string methodFullName)
+    {
+        var s = (from assembly in _currentDomainAssemblies
+            from type in assembly.GetTypes()
+            where NamespaceHaveClassOrValueType(type)
+            select type).ToArray();
+
+        var methods = from q in s
+            from type in q.GetMethods()
+            where $"{q.FullName}::{type.Name}" == methodFullName
+            select type;
+
+        var infoAboutMethod =
+            methods.Select(x => new Method(methodFullName, GetDataTypeFromType(x.ReturnType))).First();
+        return infoAboutMethod;
+
+
+        static DataType GetDataTypeFromType(Type getType)
+        {
+            if (getType == typeof(string)) return DataType.@string;
+            if (getType == typeof(int)) return DataType.int32;
+            if (getType == typeof(float)) return DataType.float32;
+            if (getType == typeof(bool)) return DataType.@bool;
+
+            return DataType.@null;
+        }
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static string GetRealTypeName(Token token)
     {
         switch (token.DataType)
@@ -110,6 +164,7 @@ public static class LexerFixTokens
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static IEnumerable<string> GetClassesOrValueTypes(string fullName)
     {
         var s = (from assembly in _currentDomainAssemblies
@@ -124,7 +179,8 @@ public static class LexerFixTokens
             where $"{q.FullName}.{type.Name}" == fullName
             select q.FullName!;
 
-        return classes.Concat(methods);
+        var classesOrValueTypes = classes.Concat(methods);
+        return classesOrValueTypes;
     }
 
     private static IEnumerable<string> GetAssembliesThatHaveClass(string fullName)
@@ -139,6 +195,7 @@ public static class LexerFixTokens
     }
 
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void SetUsingNamespaces(IReadOnlyList<Token> tokens)
     {
         for (var i = 0; i < tokens.Count; i++)
@@ -146,17 +203,20 @@ public static class LexerFixTokens
                 _usingNamespaces.Add(tokens[++i].Value!.ToString()!);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool NamespaceHaveClassOrValueType(Type type)
     {
         return type.IsPublic && (type.IsClass || type.IsValueType);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void SetExpressions(List<Token> tokens)
     {
         SetIsPartOfExpression(tokens);
         ChangeExpressionToReversePolishNotation(tokens);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void ChangeExpressionToReversePolishNotation(List<Token> tokens)
     {
         foreach (var expressionPosition in GetExpressionsPositions(tokens))
@@ -171,6 +231,7 @@ public static class LexerFixTokens
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static IEnumerable<(int startPosition, int count)> GetExpressionsPositions(IList<Token> tokens)
     {
         var offset = 0;
@@ -191,6 +252,7 @@ public static class LexerFixTokens
             }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void SetIsPartOfExpression(IList<Token> tokens)
     {
         for (var i = 0; i < tokens.Count; i++)
@@ -208,6 +270,7 @@ public static class LexerFixTokens
     }
 
 #pragma warning disable CS8509
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void SetVariables(IReadOnlyList<Token> tokens)
     {
         var variables = new Dictionary<string, DataType>();
@@ -238,6 +301,7 @@ public static class LexerFixTokens
     }
 #pragma warning restore CS8509
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool IsType(Token token)
     {
         return token.TokenKind is Kind.StringType or Kind.FloatType or Kind.IntType or Kind.BoolType;

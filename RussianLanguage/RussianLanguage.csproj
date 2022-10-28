@@ -9,10 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.NETCore.ILDAsm" Version="7.0.0-rc.2.22472.3" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Lexer\Lexer.csproj" />
     </ItemGroup>
 

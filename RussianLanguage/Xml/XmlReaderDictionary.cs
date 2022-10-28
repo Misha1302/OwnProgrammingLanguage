@@ -1,9 +1,11 @@
-﻿using System.Xml;
+﻿using System.Runtime.CompilerServices;
+using System.Xml;
 
-namespace RussianLanguage;
+namespace RussianLanguage.Xml;
 
 public static class XmlReaderDictionary
 {
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static Dictionary<string, string> GetXmlElements(string path)
     {
         var xDoc = new XmlDocument();

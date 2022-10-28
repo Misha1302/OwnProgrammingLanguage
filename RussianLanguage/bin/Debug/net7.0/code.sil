@@ -1,4 +1,12 @@
 using "System"
 
+call Console::ReadLine()
 string a = call Console::ReadLine()
-call Console::WriteLine(a)
+
+bool cond = from a call ::Contains("Q")
+
+if [cond]
+{
+	call Console::WriteLine("В твоем предложении содержалась буква: \"Q\"")
+	call Console::WriteLine("1")
+}

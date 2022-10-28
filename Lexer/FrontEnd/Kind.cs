@@ -43,5 +43,9 @@ public enum Kind
     Using,
     MethodSeparator,
     Method,
-    Extern
+    Extern,
+    If,
+    Else,
+    CloseBrace,
+    OpenBrace
 }

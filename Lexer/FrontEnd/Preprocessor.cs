@@ -23,6 +23,7 @@ public static class Preprocessor
         return lines;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static List<CodeLine> ClearCodeLines(List<CodeLine> lines)
     {
         lines = lines.Select((x, i) => new CodeLine(x.Line, i)).ToList();

@@ -1,7 +1,10 @@
-﻿namespace Lexer.FrontEnd;
+﻿using System.Runtime.CompilerServices;
+
+namespace Lexer.FrontEnd;
 
 public static class Rpn
 {
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static IEnumerable<Token> GetReversePolishNotation(List<Token> tokens)
     {
         var operationsStack = new Stack<Token>();
@@ -59,6 +62,7 @@ public static class Rpn
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool IsOperator(Token token)
     {
         return token.TokenKind is Kind.Addition or Kind.Subtraction or Kind.Multiplication or Kind.Division
@@ -66,11 +70,13 @@ public static class Rpn
             or Kind.AndBoolSign or Kind.OrBoolSign;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool IsNumber(Token token)
     {
         return token.DataType is DataType.int32 or DataType.float32 or DataType.@bool or DataType.@string;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static int GetPriority(Token token)
     {
         return token.TokenKind switch
