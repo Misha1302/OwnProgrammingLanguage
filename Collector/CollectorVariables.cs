@@ -1,6 +1,6 @@
-﻿namespace RussianLanguage.Backend;
+﻿namespace Collector;
 
-public static class CollectorConstants
+public static class CollectorVariables
 {
     public const string PUSH_INT_CONSTANT = "ldc.i4";
     public const string PUSH_FLOAT_CONSTANT = "ldc.r4";

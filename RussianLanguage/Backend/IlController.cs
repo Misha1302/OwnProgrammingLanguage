@@ -17,21 +17,21 @@ public static class IlController
             UseShellExecute = false,
             CreateNoWindow = false,
             RedirectStandardOutput = true,
-            FileName = Directory.GetCurrentDirectory() + "\\src\\cmd\\compile.cmd"
+            FileName = $"{Directory.GetCurrentDirectory()}\\src\\cmd\\compile.cmd"
         };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static bool CompileCodeToIl(string code)
     {
-        File.WriteAllText("cil\\Program.il", code);
+        File.WriteAllText(@"cil\Program.il", code);
 
         var proc = new Process();
         proc.StartInfo = _processStartInfo;
         proc.Start();
 
         _stringBuilder.Clear();
-        while (!_stringBuilder.ToString().EndsWith("pause\n"))
+        while (!StringBuilderEndsWith(_stringBuilder, ">pause\n"))
             _stringBuilder.Append(proc.StandardOutput.ReadLine() + '\n');
 
         var str = _stringBuilder.ToString();
@@ -40,13 +40,25 @@ public static class IlController
         return !str.Contains("***** FAILURE *****");
     }
 
+    private static bool StringBuilderEndsWith(StringBuilder stringBuilder, string str)
+    {
+        if (str.Length > stringBuilder.Length) return false;
+        for (var i = str.Length - 1; i > 0; i--)
+        {
+            var ch = str[^i];
+            if (stringBuilder[^i] != ch) return false;
+        }
+
+        return true;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void StartIlCode()
     {
         var processStartInfo = new ProcessStartInfo
         {
             UseShellExecute = false,
-            FileName = "src\\cmd\\start.cmd"
+            FileName = @"src\cmd\start.cmd"
         };
 
         var proc = new Process();

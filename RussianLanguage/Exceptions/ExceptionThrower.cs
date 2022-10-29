@@ -15,7 +15,7 @@ public static class ExceptionThrower
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public static void ThrowException(ExceptionType exceptionType, Language? language)
+    internal static void ThrowException(ExceptionType exceptionType, Language? language)
     {
         Exception ex;
         if (language != null)

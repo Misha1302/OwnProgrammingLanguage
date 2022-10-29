@@ -1,0 +1,1 @@
+using "System" string s = call Console::ReadLine() float a = call Convert::ToSingle(s) a = [a + 1] call Console::WriteLine(a)

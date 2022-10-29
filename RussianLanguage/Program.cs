@@ -23,7 +23,9 @@ public static class Program
         _code = File.ReadAllText(strings.FirstOrDefault() ?? "code.sil");
 
         var stopwatch = Stopwatch.StartNew();
+
         var codeCompilationStatus = CompileCode(_code);
+
         stopwatch.Stop();
         Console.WriteLine($"Compilation time: {stopwatch.ElapsedMilliseconds} ms");
 
@@ -37,8 +39,8 @@ public static class Program
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool CompileCode(string code)
     {
-        var tokens = Lexer.Lexer.Lexer.GetTokens(code);
-        var ilCode = Collector.GetCode(tokens);
+        var tokens = CodeOptimizer.OptimizeTokens(Lexer.Lexer.Lexer.GetTokens(code));
+        var ilCode = Collector.Collector.GetCode(tokens);
         var codeCompilationStatus = IlController.CompileCodeToIl(ilCode);
         return codeCompilationStatus;
     }

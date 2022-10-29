@@ -6,15 +6,6 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v7.0": {
-      "RussianLanguage/1.0.0": {
-        "dependencies": {
-          "Collector": "1.0.0",
-          "Lexer": "1.0.0"
-        },
-        "runtime": {
-          "RussianLanguage.dll": {}
-        }
-      },
       "Collector/1.0.0": {
         "dependencies": {
           "Lexer": "1.0.0"
@@ -31,11 +22,6 @@
     }
   },
   "libraries": {
-    "RussianLanguage/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
     "Collector/1.0.0": {
       "type": "project",
       "serviceable": false,

@@ -1,4 +1,4 @@
-﻿namespace RussianLanguage.Backend;
+﻿namespace Collector;
 
 public enum ExpressionType
 {

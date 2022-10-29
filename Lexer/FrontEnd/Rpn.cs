@@ -5,7 +5,7 @@ namespace Lexer.FrontEnd;
 public static class Rpn
 {
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public static IEnumerable<Token> GetReversePolishNotation(List<Token> tokens)
+    internal static IEnumerable<Token> GetReversePolishNotation(List<Token> tokens)
     {
         var operationsStack = new Stack<Token>();
         var result = new List<Token>();
@@ -71,7 +71,7 @@ public static class Rpn
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    private static bool IsNumber(Token token)
+    public static bool IsNumber(Token token)
     {
         return token.DataType is DataType.int32 or DataType.float32 or DataType.@bool or DataType.@string;
     }

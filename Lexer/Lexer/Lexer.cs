@@ -6,7 +6,7 @@ using static Lexer.Lexer.LexerVariables;
 
 namespace Lexer.Lexer;
 
-public class Lexer
+public static class Lexer
 {
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static void Init(string code)
@@ -120,8 +120,9 @@ public class Lexer
         Position++;
 
         var pattern = $"(?<!(\\\\)){StringCharacter}";
-        var endIndex = Regex.Match(Code[(Position + 1)..], pattern).Index + Position + 1;
-        var value = Code[Position..endIndex];
+        var circumcisedString = Code[Position..];
+        var endIndex = Regex.Match(circumcisedString, pattern).Index;
+        var value = circumcisedString[..endIndex];
 
         Position += value.Length;
         return new Token(Kind.String, $"{StringCharacter}{value}{StringCharacter}", value, DataType.@string);
@@ -130,17 +131,13 @@ public class Lexer
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static bool GetCommand(out Token token)
     {
-        foreach (var commandPair in Words.Where(commandPair =>
-                     Code[Position..].IndexOf(commandPair.Key, StringComparison.Ordinal) == 0))
+        foreach (var commandPair in Words.Where(commandPair => Code[Position..].StartsWith(commandPair.Key)))
         {
             if (Code.Length > Position + commandPair.Key.Length + 1)
             {
-                if (Regex.IsMatch(Code[Position + commandPair.Key.Length].ToString(), "[a-zA-Z]")) continue;
-
-                Position += commandPair.Key.Length - 1;
-
-                token = new Token(commandPair.Value, commandPair.Key);
-                return true;
+                var c = Code[Position + commandPair.Key.Length];
+                // ReSharper disable once MergeIntoPattern
+                if ('A' >= c && c >= 'a') continue;
             }
 
             Position += commandPair.Key.Length - 1;
@@ -181,17 +178,17 @@ public class Lexer
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextHexToken()
     {
-        const int numberBase = 16;
+        const int NUMBER_BASE = 16;
         var validCharacters = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-        return GetNextNumberToken(numberBase, validCharacters);
+        return GetNextNumberToken(NUMBER_BASE, validCharacters);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextBinaryToken()
     {
-        const int numberBase = 2;
+        const int NUMBER_BASE = 2;
         var validCharacters = new[] { '0', '1' };
-        return GetNextNumberToken(numberBase, validCharacters);
+        return GetNextNumberToken(NUMBER_BASE, validCharacters);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -214,14 +211,14 @@ public class Lexer
         var numberStr = number.ToString();
         return isInt
             ? new Token(Kind.Int, numberStr, Convert.ToInt32(numberStr, numberBase), DataType.int32)
-            : new Token(Kind.Float, numberStr, Convert.ToSingle(numberStr), DataType.float32);
+            : new Token(Kind.Float, numberStr, Convert.ToSingle(numberStr.Replace('.', ',')), DataType.float32);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static Token GetNextDecimalToken()
     {
-        const int numberBase = 10;
+        const int NUMBER_BASE = 10;
         var validCharacters = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.' };
-        return GetNextNumberToken(numberBase, validCharacters);
+        return GetNextNumberToken(NUMBER_BASE, validCharacters);
     }
 }

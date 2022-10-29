@@ -15,8 +15,13 @@ public static class LexerFixTokens
 
     public static readonly List<Method> Methods = new();
 
+    private static readonly Type[] _types = (from assembly in _currentDomainAssemblies
+        from type in assembly.GetTypes()
+        where NamespaceHaveClassOrValueType(type)
+        select type).ToArray();
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public static void FixTokens(List<Token> tokens)
+    internal static void FixTokens(List<Token> tokens)
     {
         SetUsingNamespaces(tokens);
         SetMethods(tokens);
@@ -82,7 +87,7 @@ public static class LexerFixTokens
             token.Text += $"[{assemblyName}]";
             if (tokens[localI].TokenKind != Kind.MethodSeparator)
             {
-                token.Text += @class.Split('.')[0] + '.';
+                token.Text += $"{@class.Split('.')[0]}.";
                 method = GetInfoAboutMethod($"{@class}{tokens[localI + 1].Text}{tokens[localI + 2].Text}");
             }
             else
@@ -91,7 +96,7 @@ public static class LexerFixTokens
                 method = GetInfoAboutMethod($"{@class}::{tokens[localI + 1].Text}");
             }
 
-            if(!Methods.Contains(method)) Methods.Add(method);
+            if (!Methods.Contains(method)) Methods.Add(method);
 
 
             if (isFromCall)
@@ -119,29 +124,23 @@ public static class LexerFixTokens
 
     private static Method GetInfoAboutMethod(string methodFullName)
     {
-        var s = (from assembly in _currentDomainAssemblies
-            from type in assembly.GetTypes()
-            where NamespaceHaveClassOrValueType(type)
-            select type).ToArray();
-
-        var methods = from q in s
+        var methods = from q in _types
             from type in q.GetMethods()
             where $"{q.FullName}::{type.Name}" == methodFullName
             select type;
 
         var infoAboutMethod =
             methods.Select(x => new Method(methodFullName, GetDataTypeFromType(x.ReturnType))).First();
+
         return infoAboutMethod;
 
 
-        static DataType GetDataTypeFromType(Type getType)
+        DataType GetDataTypeFromType(Type getType)
         {
             if (getType == typeof(string)) return DataType.@string;
             if (getType == typeof(int)) return DataType.int32;
             if (getType == typeof(float)) return DataType.float32;
-            if (getType == typeof(bool)) return DataType.@bool;
-
-            return DataType.@null;
+            return getType == typeof(bool) ? DataType.@bool : DataType.@null;
         }
     }
 
@@ -167,14 +166,9 @@ public static class LexerFixTokens
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     private static IEnumerable<string> GetClassesOrValueTypes(string fullName)
     {
-        var s = (from assembly in _currentDomainAssemblies
-            from type in assembly.GetTypes()
-            where NamespaceHaveClassOrValueType(type)
-            select type).ToArray();
+        var classes = _types.Where(type => type.FullName == fullName).Select(type => type.FullName!);
 
-        var classes = s.Where(type => type.FullName == fullName).Select(type => type.FullName!);
-
-        var methods = from q in s
+        var methods = from q in _types
             from type in q.GetMethods()
             where $"{q.FullName}.{type.Name}" == fullName
             select q.FullName!;
